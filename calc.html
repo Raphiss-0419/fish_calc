@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로아 융화제 제작 계산기</title>
+    <style>
+        :root {
+            --bg-color: #1a1c23;
+            --card-bg: #252831;
+            --primary-color: #e49f25;
+            --secondary-color: #4db3ff;
+            --text-color: #e1e1e1;
+            --input-bg: #12141a;
+            --border-color: #3f4350;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .type-option {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            gap: 8px;
+        }
+
+        .type-option.active {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(228, 159, 37, 0.1);
+        }
+
+        .type-icon {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #aaa;
+            gap: 6px;
+        }
+
+        .item-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
+        
+        #trace {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background-color: #ffb433;
+        }
+
+        .result-area {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: var(--input-bg);
+            border-radius: 8px;
+            text-align: center;
+            border: 1px dashed var(--border-color);
+        }
+
+        .result-label {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .result-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .formula-box {
+            font-size: 0.75rem;
+            background: #1e2029;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            color: #888;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>제작 계산기</h2>
+    
+    <div class="type-selector">
+        <div id="type_normal" class="type-option active" onclick="setType('normal')">
+            <img src="normal_item.png" class="type-icon" alt="아비도스">
+            <span>아비도스 융화제</span>
+        </div>
+        <div id="type_superior" class="type-option" onclick="setType('superior')">
+            <img src="superior_item.png" class="type-icon" alt="상급">
+            <span>상급 아비도스 융화제</span>
+        </div>
+    </div>
+
+    <div class="input-grid">
+        <div class="input-group">
+            <label><img src="rare.png" class="item-icon"> 희귀 재료 보유량</label>
+            <input type="number" id="rare" placeholder="0" min="0">
+        </div>
+        <div class="input-group">
+            <label><img src="uncommon.png" class="item-icon"> 고급 재료 보유량</label>
+            <input type="number" id="uncommon" placeholder="0" min="0">
+        </div>
+        <div class="input-group">
+            <label><img src="common.png" class="item-icon"> 일반 재료 보유량</label>
+            <input type="number" id="common" placeholder="0" min="0">
+        </div>
+        <div class="input-group">
+            <label style="color:var(--secondary-color);"><img src="trace.png" class="item-icon"> 생활의 흔적 보유량</label>
+            <input type="number" id="trace" placeholder="0" min="0">
+        </div>
+    </div>
+
+    <button onclick="calculate()">최대 제작 개수 계산</button>
+
+    <div class="result-area">
+        <div class="result-label" id="result_title">
+            <img id="res_img" src="normal_item.png" class="item-icon"> 
+            <span id="res_text">아비도스 융화제 제작 가능 수</span>
+        </div>
+        <div id="result" class="result-value">0</div>
+    </div>
+
+    <div class="formula-box" id="info_box">
+        <strong>[아비도스] 필요 재료:</strong> 희귀 33, 고급 45, 일반 86<br>
+        • 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>
+        • 흔적 100 → 희귀 10
+    </div>
+</div>
+
+<script>
+    let currentType = 'normal';
+
+    function setType(type) {
+        currentType = type;
+        document.getElementById('type_normal').classList.toggle('active', type === 'normal');
+        document.getElementById('type_superior').classList.toggle('active', type === 'superior');
+        
+        const infoBox = document.getElementById('info_box');
+        const resText = document.getElementById('res_text');
+        const resImg = document.getElementById('res_img');
+
+        if (type === 'normal') {
+            infoBox.innerHTML = `<strong>[아비도스] 필요 재료:</strong> 희귀 33, 고급 45, 일반 86<br>• 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>• 흔적 100 → 희귀 10`;
+            resText.innerText = "아비도스 융화제 제작 가능 수";
+            resImg.src = "normal_item.png";
+        } else {
+            infoBox.innerHTML = `<strong>[상급 아비도스] 필요 재료:</strong> 희귀 43, 고급 59, 일반 112<br>• 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>• 흔적 100 → 희귀 10`;
+            resText.innerText = "상급 아비도스 융화제 제작 가능 수";
+            resImg.src = "superior_item.png";
+        }
+        calculate();
+    }
+
+    function calculate() {
+        const rareHave = parseInt(document.getElementById('rare').value) || 0;
+        const traceHave = parseInt(document.getElementById('trace').value) || 0;
+        const uncommonHave = parseInt(document.getElementById('uncommon').value) || 0;
+        const commonHave = parseInt(document.getElementById('common').value) || 0;
+
+        const req = currentType === 'normal' 
+            ? { rare: 33, uncommon: 45, common: 86 } 
+            : { rare: 43, uncommon: 59, common: 112 };
+
+        function canMake(targetCount) {
+            const reqRare = req.rare * targetCount;
+            const reqUncommon = req.uncommon * targetCount;
+            const reqCommon = req.common * targetCount;
+
+            if (uncommonHave < reqUncommon || commonHave < reqCommon) {
+                return false;
+            }
+
+            const extraUncommon = uncommonHave - reqUncommon;
+            const extraCommon = commonHave - reqCommon;
+
+            let totalTraces = traceHave;
+            totalTraces += Math.floor(extraUncommon / 50) * 80;
+            totalTraces += Math.floor(extraCommon / 100) * 80;
+
+            const convertedRare = Math.floor(totalTraces / 100) * 10;
+
+            return (rareHave + convertedRare) >= reqRare;
+        }
+
+        let low = 0;
+        let high = 2000000; 
+        let result = 0;
+
+        while (low <= high) {
+            let mid = Math.floor((low + high) / 2);
+            if (canMake(mid)) {
+                result = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        document.getElementById('result').innerText = result.toLocaleString();
+    }
+</script>
+
+</body>
+</html>
