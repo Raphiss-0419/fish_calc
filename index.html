@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로아 융화제 제작 계산기</title>
+    <title>로아 아비도스 융화제 계산기</title>
+    
+    <meta property="og:title" content="로아 아비도스 융화제 계산기">
+    <meta property="og:description" content="보유 재료를 최적으로 교환하여 최대 제작 개수를 계산합니다.">
+    <meta property="og:image" content="normal_item.png">
+    <meta name="theme-color" content="#e49f25">
+
     <style>
         :root {
             --bg-color: #1a1c23;
@@ -13,6 +19,7 @@
             --text-color: #e1e1e1;
             --input-bg: #12141a;
             --border-color: #3f4350;
+            --accent-color: #00ff9d;
         }
 
         body {
@@ -116,10 +123,6 @@
             border-color: var(--primary-color);
         }
         
-        #trace {
-            border-left: 4px solid var(--secondary-color);
-        }
-
         button {
             width: 100%;
             padding: 15px;
@@ -144,7 +147,7 @@
             background-color: var(--input-bg);
             border-radius: 8px;
             text-align: center;
-            border: 1px dashed var(--border-color);
+            border: 1px solid var(--primary-color);
         }
 
         .result-label {
@@ -158,18 +161,47 @@
         }
 
         .result-value {
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: var(--primary-color);
         }
 
+        /* 교환 상세 내역 스타일 */
+        .breakdown {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #1e2029;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .breakdown-title {
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            color: #ccc;
+        }
+
+        .breakdown-item span:last-child {
+            color: #fff;
+            font-weight: bold;
+        }
+
         .formula-box {
             font-size: 0.75rem;
-            background: #1e2029;
             padding: 10px;
-            border-radius: 5px;
             margin-top: 15px;
-            color: #888;
+            color: #777;
             line-height: 1.6;
         }
     </style>
@@ -192,19 +224,19 @@
 
     <div class="input-grid">
         <div class="input-group">
-            <label><img src="rare.png" class="item-icon"> 희귀 재료 보유량</label>
+            <label><img src="rare.png" class="item-icon"> 희귀 재료</label>
             <input type="number" id="rare" placeholder="0" min="0">
         </div>
         <div class="input-group">
-            <label><img src="uncommon.png" class="item-icon"> 고급 재료 보유량</label>
+            <label><img src="uncommon.png" class="item-icon"> 고급 재료</label>
             <input type="number" id="uncommon" placeholder="0" min="0">
         </div>
         <div class="input-group">
-            <label><img src="common.png" class="item-icon"> 일반 재료 보유량</label>
+            <label><img src="common.png" class="item-icon"> 일반 재료</label>
             <input type="number" id="common" placeholder="0" min="0">
         </div>
         <div class="input-group">
-            <label style="color:var(--secondary-color);"><img src="trace.png" class="item-icon"> 생활의 흔적 보유량</label>
+            <label style="color:var(--secondary-color);"><img src="trace.png" class="item-icon"> 생활의 흔적</label>
             <input type="number" id="trace" placeholder="0" min="0">
         </div>
     </div>
@@ -217,6 +249,14 @@
             <span id="res_text">아비도스 융화제 제작 가능 수</span>
         </div>
         <div id="result" class="result-value">0</div>
+    </div>
+
+    <div id="breakdown_area" class="breakdown" style="display:none;">
+        <span class="breakdown-title">📊 재료 교환 상세 내역</span>
+        <div class="breakdown-item"><span>고급 → 흔적 변환</span><span id="u_to_t">0개</span></div>
+        <div class="breakdown-item"><span>일반 → 흔적 변환</span><span id="c_to_t">0개</span></div>
+        <div class="breakdown-item"><span>최종 흔적 합계</span><span id="total_t">0개</span></div>
+        <div class="breakdown-item"><span>흔적 → 희귀 보충</span><span id="t_to_r" style="color:var(--accent-color);">+0개</span></div>
     </div>
 
     <div class="formula-box" id="info_box">
@@ -260,31 +300,32 @@
             ? { rare: 33, uncommon: 45, common: 86 } 
             : { rare: 43, uncommon: 59, common: 112 };
 
+        // 교환 수치를 저장할 임시 객체
+        let exchangeData = { uToT: 0, cToT: 0, totalT: 0, tToR: 0 };
+
         function canMake(targetCount) {
             const reqRare = req.rare * targetCount;
             const reqUncommon = req.uncommon * targetCount;
             const reqCommon = req.common * targetCount;
 
-            if (uncommonHave < reqUncommon || commonHave < reqCommon) {
-                return false;
-            }
+            if (uncommonHave < reqUncommon || commonHave < reqCommon) return false;
 
             const extraUncommon = uncommonHave - reqUncommon;
             const extraCommon = commonHave - reqCommon;
 
-            let totalTraces = traceHave;
-            totalTraces += Math.floor(extraUncommon / 50) * 80;
-            totalTraces += Math.floor(extraCommon / 100) * 80;
-
+            const uToT = Math.floor(extraUncommon / 50) * 80;
+            const cToT = Math.floor(extraCommon / 100) * 80;
+            const totalTraces = traceHave + uToT + cToT;
             const convertedRare = Math.floor(totalTraces / 100) * 10;
+
+            // 마지막 성공한 시점의 데이터를 캡처하기 위해 외부 변수에 저장
+            exchangeData = { uToT, cToT, totalT: totalTraces, tToR: convertedRare };
 
             return (rareHave + convertedRare) >= reqRare;
         }
 
-        let low = 0;
-        let high = 2000000; 
-        let result = 0;
-
+        // 이진 탐색
+        let low = 0, high = 2000000, result = 0;
         while (low <= high) {
             let mid = Math.floor((low + high) / 2);
             if (canMake(mid)) {
@@ -295,7 +336,20 @@
             }
         }
 
+        // 결과 및 상세 내역 표시
         document.getElementById('result').innerText = result.toLocaleString();
+        
+        if (result > 0) {
+            // 최종 결과값으로 다시 한번 계산하여 정확한 상세 내역 산출
+            canMake(result); 
+            document.getElementById('breakdown_area').style.display = 'block';
+            document.getElementById('u_to_t').innerText = exchangeData.uToT.toLocaleString() + '개';
+            document.getElementById('c_to_t').innerText = exchangeData.cToT.toLocaleString() + '개';
+            document.getElementById('total_t').innerText = exchangeData.totalT.toLocaleString() + '개';
+            document.getElementById('t_to_r').innerText = '+' + exchangeData.tToR.toLocaleString() + '개';
+        } else {
+            document.getElementById('breakdown_area').style.display = 'none';
+        }
     }
 </script>
 
