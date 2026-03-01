@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로아 아비도스 융화제 계산기</title>
+    <title>로아 융화제 제작 계산기</title>
     
     <meta property="og:title" content="로아 아비도스 융화제 계산기">
-    <meta property="og:description" content="보유 재료를 최적으로 교환하여 최대 제작 개수를 계산합니다.">
+    <meta property="og:description" content="단위별 정밀 교환비를 적용한 최적의 제작 개수 계산기입니다.">
     <meta property="og:image" content="normal_item.png">
     <meta name="theme-color" content="#e49f25">
 
@@ -166,7 +166,6 @@
             color: var(--primary-color);
         }
 
-        /* 교환 상세 내역 스타일 */
         .breakdown {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -253,16 +252,16 @@
 
     <div id="breakdown_area" class="breakdown" style="display:none;">
         <span class="breakdown-title">📊 재료 교환 상세 내역</span>
-        <div class="breakdown-item"><span>고급 → 흔적 변환</span><span id="u_to_t">0개</span></div>
-        <div class="breakdown-item"><span>일반 → 흔적 변환</span><span id="c_to_t">0개</span></div>
-        <div class="breakdown-item"><span>최종 흔적 합계</span><span id="total_t">0개</span></div>
+        <div class="breakdown-item"><span>일반 → 흔적 (100개 단위)</span><span id="c_to_t">0개</span></div>
+        <div class="breakdown-item"><span>고급 → 흔적 (50개 단위)</span><span id="u_to_t">0개</span></div>
+        <div class="breakdown-item"><span>보유 흔적 포함 총합</span><span id="total_t">0개</span></div>
         <div class="breakdown-item"><span>흔적 → 희귀 보충</span><span id="t_to_r" style="color:var(--accent-color);">+0개</span></div>
     </div>
 
     <div class="formula-box" id="info_box">
         <strong>[아비도스] 필요 재료:</strong> 희귀 33, 고급 45, 일반 86<br>
-        • 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>
-        • 흔적 100 → 희귀 10
+        • 일반 100개당 흔적 80개 / 고급 50개당 흔적 80개<br>
+        • 흔적 100개당 희귀 10개
     </div>
 </div>
 
@@ -279,11 +278,11 @@
         const resImg = document.getElementById('res_img');
 
         if (type === 'normal') {
-            infoBox.innerHTML = `<strong>[아비도스] 필요 재료:</strong> 희귀 33, 고급 45, 일반 86<br>• 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>• 흔적 100 → 희귀 10`;
+            infoBox.innerHTML = `<strong>[아비도스] 필요 재료:</strong> 희귀 33, 고급 45, 일반 86<br>• 일반 100개당 흔적 80개 / 고급 50개당 흔적 80개<br>• 흔적 100개당 희귀 10개`;
             resText.innerText = "아비도스 융화제 제작 가능 수";
             resImg.src = "normal_item.png";
         } else {
-            infoBox.innerHTML = `<strong>[상급 아비도스] 필요 재료:</strong> 희귀 43, 고급 59, 일반 112<br>• 고급 50 → 흔적 80 / 일반 100 → 흔적 80<br>• 흔적 100 → 희귀 10`;
+            infoBox.innerHTML = `<strong>[상급 아비도스] 필요 재료:</strong> 희귀 43, 고급 59, 일반 112<br>• 일반 100개당 흔적 80개 / 고급 50개당 흔적 80개<br>• 흔적 100개당 희귀 10개`;
             resText.innerText = "상급 아비도스 융화제 제작 가능 수";
             resImg.src = "superior_item.png";
         }
@@ -300,7 +299,6 @@
             ? { rare: 33, uncommon: 45, common: 86 } 
             : { rare: 43, uncommon: 59, common: 112 };
 
-        // 교환 수치를 저장할 임시 객체
         let exchangeData = { uToT: 0, cToT: 0, totalT: 0, tToR: 0 };
 
         function canMake(targetCount) {
@@ -308,23 +306,24 @@
             const reqUncommon = req.uncommon * targetCount;
             const reqCommon = req.common * targetCount;
 
+            // 상자를 만들기 위한 최소 고급/일반 재료가 있는지 먼저 확인
             if (uncommonHave < reqUncommon || commonHave < reqCommon) return false;
 
             const extraUncommon = uncommonHave - reqUncommon;
             const extraCommon = commonHave - reqCommon;
 
+            // 정밀 단위 교환 로직 적용 (고급 50단위, 일반 100단위)
             const uToT = Math.floor(extraUncommon / 50) * 80;
             const cToT = Math.floor(extraCommon / 100) * 80;
+            
             const totalTraces = traceHave + uToT + cToT;
             const convertedRare = Math.floor(totalTraces / 100) * 10;
 
-            // 마지막 성공한 시점의 데이터를 캡처하기 위해 외부 변수에 저장
             exchangeData = { uToT, cToT, totalT: totalTraces, tToR: convertedRare };
 
             return (rareHave + convertedRare) >= reqRare;
         }
 
-        // 이진 탐색
         let low = 0, high = 2000000, result = 0;
         while (low <= high) {
             let mid = Math.floor((low + high) / 2);
@@ -336,15 +335,14 @@
             }
         }
 
-        // 결과 및 상세 내역 표시
         document.getElementById('result').innerText = result.toLocaleString();
         
         if (result > 0) {
-            // 최종 결과값으로 다시 한번 계산하여 정확한 상세 내역 산출
             canMake(result); 
             document.getElementById('breakdown_area').style.display = 'block';
-            document.getElementById('u_to_t').innerText = exchangeData.uToT.toLocaleString() + '개';
+            // 순서: 일반 먼저, 그 다음 고급
             document.getElementById('c_to_t').innerText = exchangeData.cToT.toLocaleString() + '개';
+            document.getElementById('u_to_t').innerText = exchangeData.uToT.toLocaleString() + '개';
             document.getElementById('total_t').innerText = exchangeData.totalT.toLocaleString() + '개';
             document.getElementById('t_to_r').innerText = '+' + exchangeData.tToR.toLocaleString() + '개';
         } else {
